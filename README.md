@@ -46,7 +46,7 @@ The script generates a Markdown digest that includes either Git repository infor
 
 ```bash
 digest --help
-Usage: digest.sh [-e EXTENSION] [-d DIRECTORY]
+Usage: /usr/local/bin/digest [-e EXTENSION] [-d DIRECTORY]
    -e, --exclude-ext   Exclude files matching the given extension (e.g. .md or "*.md")
    -d, --exclude-dir   Exclude an entire directory (e.g. tests)
 ```
