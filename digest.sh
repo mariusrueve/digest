@@ -5,17 +5,17 @@
 # output to the clipboard.
 #
 # Usage:
-#   ./digest [-e EXTENSION] [-d DIRECTORY]
+#   ./digest [-e EXTENSION[,EXTENSION...]] [-d DIRECTORY[,DIRECTORY...]]
 #
 # Options:
-#   -e, --exclude-ext   Exclude files matching the given extension (e.g. .md or "*.md").
-#                       If you provide an extension starting with a dot (e.g. ".md"), the
-#                       script will match files ending with that extension.
+#   -e, --exclude-ext   Exclude files matching the given extension(s) (e.g. .md or "*.md").
+#                       You can pass multiple extensions separated by commas (e.g. .md,.txt).
 #
 #   -d, --exclude-dir   Exclude an entire directory (e.g. tests).
+#                       You can pass multiple directories separated by commas (e.g. tests,build).
 #
 # Example:
-#   ./digest -e .md -d tests
+#   ./digest -e .md,.txt -d tests,build
 #
 # The final Markdown output is automatically copied to your clipboard (using pbcopy,
 # xclip, or clip). If no clipboard utility is available, the output is printed.
@@ -23,9 +23,11 @@
 
 # Function: Print usage instructions.
 usage() {
-    echo "Usage: $0 [-e EXTENSION] [-d DIRECTORY]"
-    echo "   -e, --exclude-ext   Exclude files matching the given extension (e.g. .md or \"*.md\")"
+    echo "Usage: $0 [-e EXTENSION[,EXTENSION...]] [-d DIRECTORY[,DIRECTORY...]]"
+    echo "   -e, --exclude-ext   Exclude files matching the given extension(s) (e.g. .md or \"*.md\")"
+    echo "                       You can pass multiple extensions separated by commas (e.g. .md,.txt)."
     echo "   -d, --exclude-dir   Exclude an entire directory (e.g. tests)"
+    echo "                       You can pass multiple directories separated by commas (e.g. tests,build)."
     exit 1
 }
 
@@ -38,7 +40,11 @@ while [[ "$#" -gt 0 ]]; do
   case "$1" in
     -e|--exclude-ext)
       if [[ -n "$2" ]]; then
-         exclude_ext+=("$2")
+         # Split comma-separated extensions and add each to the array.
+         IFS=',' read -ra exts <<< "$2"
+         for ext in "${exts[@]}"; do
+             exclude_ext+=("$ext")
+         done
          shift
       else
          echo "Error: --exclude-ext requires a value."
@@ -47,7 +53,11 @@ while [[ "$#" -gt 0 ]]; do
       ;;
     -d|--exclude-dir)
       if [[ -n "$2" ]]; then
-         exclude_dir+=("$2")
+         # Split comma-separated directories and add each to the array.
+         IFS=',' read -ra dirs <<< "$2"
+         for dir in "${dirs[@]}"; do
+             exclude_dir+=("$dir")
+         done
          shift
       else
          echo "Error: --exclude-dir requires a value."
