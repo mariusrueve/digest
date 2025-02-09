@@ -1,5 +1,7 @@
 # digest
 
+![Logo](digest_logo.png)
+
 [digest](https://github.com/mariusrueve/digest/blob/main/digest.sh) is a lightweight Bash script that aggregates all files from the current directory (or Git repository) into a Markdown-formatted digest. It automatically includes repository information if available and copies the output to your clipboard—making it easy to share code or configuration details with others or paste them into chatbots like ChatGPT.
 
 ## Features
