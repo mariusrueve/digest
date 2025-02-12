@@ -15,6 +15,9 @@
 - **Customizable Exclusions:**  
   Exclude specific file extensions (e.g., `.md`) and directories (e.g., `tests`) from the digest.
   
+- **Local Configuration:**  
+  Place a [TOML‑style configuration](#configuration) file named **.digest** in your directory to always ignore specific file types or folders.
+  
 - **Clipboard Support:**  
   The final Markdown output is automatically copied to your clipboard using `pbcopy`, `xclip`, or `clip` (depending on your system).
 
@@ -44,6 +47,18 @@ digest -e .md -d tests
 
 The script generates a Markdown digest that includes either Git repository information (if applicable) or the current directory name, along with the contents of each file (excluding those you’ve filtered out). The resulting Markdown is automatically copied to your clipboard for easy pasting.
 
+## Configuration
+
+If you want to always ignore certain file extensions or directories in a given folder, you can create a `.digest` file in that directory using a simple TOML‑style format. For example:
+
+```toml
+[ignore]
+ext = [".md", ".txt"]
+dir = ["tests", "build"]
+```
+
+When digest is run in a directory containing a `.digest` file, the specified exclusions will be applied automatically.
+
 ## Option
 
 ```bash
@@ -62,4 +77,3 @@ Usage: /usr/local/bin/digest [-e EXTENSION] [-d DIRECTORY]
   - macOS: `pbcopy`
   - Linux: `xclip` (install with sudo apt install xclip)
   - Windows: `clip`
-  

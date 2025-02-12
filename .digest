@@ -1,0 +1,3 @@
+[ignore]
+ext = [".md", ".png"]
+dir = ["tests", "build"]

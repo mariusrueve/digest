@@ -75,6 +75,61 @@ while [[ "$#" -gt 0 ]]; do
   shift
 done
 
+# --- New Feature: Load exclusions from a .digest file (TOML-style) if it exists ---
+# The expected .digest file format is:
+#
+#   [ignore]
+#   ext = [".md", ".txt"]
+#   dir = ["tests", "build"]
+#
+if [[ -f ".digest" ]]; then
+    in_ignore_section=0
+    while IFS= read -r line; do
+        # Remove leading/trailing whitespace.
+        trimmed=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        # Skip empty lines and comments.
+        if [[ -z "$trimmed" || "$trimmed" == \#* ]]; then
+            continue
+        fi
+        # Check for section headers.
+        if [[ "$trimmed" =~ ^\[.*\]$ ]]; then
+            if [[ "$trimmed" == "[ignore]" ]]; then
+                in_ignore_section=1
+            else
+                in_ignore_section=0
+            fi
+            continue
+        fi
+        if [[ $in_ignore_section -eq 1 && "$trimmed" == *"="* ]]; then
+            key=${trimmed%%=*}
+            value=${trimmed#*=}
+            key=$(echo "$key" | tr -d ' ')
+            # Remove brackets and quotes.
+            value=$(echo "$value" | sed -e 's/[][]//g' -e 's/"//g' -e "s/'//g")
+            # Trim any remaining whitespace.
+            value=$(echo "$value" | xargs)
+            if [[ "$key" == "ext" ]]; then
+                IFS=',' read -ra exts_config <<< "$value"
+                for ext in "${exts_config[@]}"; do
+                    ext=$(echo "$ext" | xargs)
+                    if [[ -n "$ext" ]]; then
+                        exclude_ext+=("$ext")
+                    fi
+                done
+            elif [[ "$key" == "dir" ]]; then
+                IFS=',' read -ra dirs_config <<< "$value"
+                for dir in "${dirs_config[@]}"; do
+                    dir=$(echo "$dir" | xargs)
+                    if [[ -n "$dir" ]]; then
+                        exclude_dir+=("$dir")
+                    fi
+                done
+            fi
+        fi
+    done < ".digest"
+fi
+# --- End .digest loading ---
+
 # Determine repository/directory information.
 header_info=""
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -106,6 +161,9 @@ find_cmd=(find . -type f)
 if [[ -d .git ]]; then
     find_cmd+=(-not -path "./.git/*")
 fi
+
+# Always exclude the .digest file.
+find_cmd+=(-not -name ".digest")
 
 # Add directory exclusions.
 for dir in "${exclude_dir[@]}"; do
