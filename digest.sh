@@ -17,9 +17,8 @@
 # Example:
 #   ./digest -e .md,.txt -d tests,build
 #
-# The final Markdown output is automatically copied to your clipboard (using pbcopy,
-# xclip, or clip) when run interactively. If output is being redirected (e.g. digest > file.txt),
-# then the output is printed to stdout.
+# When run interactively the final Markdown output is automatically copied to your clipboard.
+# When output is being redirected (e.g. digest > file.txt), the output is directly written to stdout.
 
 # Function: Print usage instructions.
 usage() {
@@ -76,7 +75,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 # --- New Feature: Load exclusions from a .digest file (TOML-style) if it exists ---
-# The expected .digest file format is:
+# Expected .digest file format:
 #
 #   [ignore]
 #   ext = [".md", ".txt"]
@@ -151,8 +150,18 @@ else
 fi
 header_info+=$'\n'"## Files"$'\n\n'
 
-# Create a temporary file to collect output.
-output_file=$(mktemp)
+# Decide where to send output.
+# If stdout is a terminal, use a temporary file (to later copy to clipboard);
+# otherwise (output redirected) write directly to stdout.
+if [ -t 1 ]; then
+    output_file=$(mktemp)
+    use_temp=true
+else
+    output_file="/dev/stdout"
+    use_temp=false
+fi
+
+# Write header to output.
 printf "%s" "$header_info" >> "$output_file"
 
 # Build the 'find' command with default and user-provided exclusions.
@@ -198,9 +207,8 @@ while IFS= read -r file; do
 done < <("${find_cmd[@]}")
 
 # --- Output handling ---
-# If stdout is connected to a terminal, proceed with clipboard copy and status messages.
-# Otherwise, simply output the final Markdown so it can be piped to a file.
-if [ -t 1 ]; then
+if $use_temp; then
+    # When running interactively, copy the output to the clipboard.
     if command -v pbcopy >/dev/null 2>&1; then
         cat "$output_file" | pbcopy
         echo "Output copied to clipboard (using pbcopy)."
@@ -215,9 +223,5 @@ if [ -t 1 ]; then
         echo "The output is printed below:"
         cat "$output_file"
     fi
-else
-    cat "$output_file"
+    rm "$output_file"
 fi
-
-# Clean up temporary file.
-rm "$output_file"
