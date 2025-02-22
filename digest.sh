@@ -2,7 +2,7 @@
 #
 # digest - Gather all files (with optional exclusions) from the current directory,
 # including Git repository information if available, and copy the aggregated Markdown
-# output to the clipboard.
+# output to the clipboard or print it to stdout (allowing redirection).
 #
 # Usage:
 #   ./digest [-e EXTENSION[,EXTENSION...]] [-d DIRECTORY[,DIRECTORY...]]
@@ -18,8 +18,8 @@
 #   ./digest -e .md,.txt -d tests,build
 #
 # The final Markdown output is automatically copied to your clipboard (using pbcopy,
-# xclip, or clip). If no clipboard utility is available, the output is printed.
-#
+# xclip, or clip) when run interactively. If output is being redirected (e.g. digest > file.txt),
+# then the output is printed to stdout.
 
 # Function: Print usage instructions.
 usage() {
@@ -197,19 +197,25 @@ while IFS= read -r file; do
   } >> "$output_file"
 done < <("${find_cmd[@]}")
 
-# Copy the output to the clipboard.
-if command -v pbcopy >/dev/null 2>&1; then
-    cat "$output_file" | pbcopy
-    echo "Output copied to clipboard (using pbcopy)."
-elif command -v xclip >/dev/null 2>&1; then
-    cat "$output_file" | xclip -selection clipboard
-    echo "Output copied to clipboard (using xclip)."
-elif command -v clip >/dev/null 2>&1; then
-    cat "$output_file" | clip
-    echo "Output copied to clipboard (using clip)."
+# --- Output handling ---
+# If stdout is connected to a terminal, proceed with clipboard copy and status messages.
+# Otherwise, simply output the final Markdown so it can be piped to a file.
+if [ -t 1 ]; then
+    if command -v pbcopy >/dev/null 2>&1; then
+        cat "$output_file" | pbcopy
+        echo "Output copied to clipboard (using pbcopy)."
+    elif command -v xclip >/dev/null 2>&1; then
+        cat "$output_file" | xclip -selection clipboard
+        echo "Output copied to clipboard (using xclip)."
+    elif command -v clip >/dev/null 2>&1; then
+        cat "$output_file" | clip
+        echo "Output copied to clipboard (using clip)."
+    else
+        echo "Warning: No clipboard utility found (pbcopy, xclip, or clip)."
+        echo "The output is printed below:"
+        cat "$output_file"
+    fi
 else
-    echo "Warning: No clipboard utility found (pbcopy, xclip, or clip)."
-    echo "The output is printed below:"
     cat "$output_file"
 fi
 
